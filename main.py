@@ -1,11 +1,23 @@
+# app.py (file Chainlit chính)
 import chainlit as cl
 import logging
+from langfuse import Langfuse  
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+# Khởi tạo Langfuse ONE TIME duy nhất
+langfuse = Langfuse(
+    public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+    secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+    host=os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com"),
+)
+logger = logging.getLogger(__name__)
 
 # Import config logging và gọi ngay đầu file
 from src.config.logging_config import setup_logging
-setup_logging()  # Config logging toàn cục 1 lần duy nhất
-
-logger = logging.getLogger(__name__)
+setup_logging()
 
 from langchain_community.chat_message_histories import RedisChatMessageHistory, ChatMessageHistory
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
@@ -15,9 +27,7 @@ from typing import List
 # Import pipeline RAG
 from src.pipeline.rag_pipeline import rag_service
 
-# Import settings để lấy redis_url và backend
 from src.config.settings import settings
-
 
 @cl.on_chat_start
 async def on_chat_start():
@@ -28,7 +38,6 @@ async def on_chat_start():
                 "Hỏi mình bất cứ điều gì về sức khỏe nhé! 🚀\n\n"
                 "Lưu ý: Đây chỉ là thông tin tham khảo. Hãy tham khảo ý kiến bác sĩ để được tư vấn chính xác."
     ).send()
-
 
 @cl.on_message
 async def on_message(message: cl.Message):
@@ -46,13 +55,12 @@ async def on_message(message: cl.Message):
         history = RedisChatMessageHistory(
             session_id=session_id,
             url=settings.chainlit.redis_url,
-            ttl=3600 * 24 * 7  # 7 ngày
+            ttl=3600 * 24 * 7
         )
         logger.debug(f"Sử dụng Redis history với URL: {settings.chainlit.redis_url}")
     else:
-        # Default: memory (hoặc file nếu sau này mở rộng)
         history = ChatMessageHistory()
-        logger.debug("Sử dụng in-memory history (không lưu persistent)")
+        logger.debug("Sử dụng in-memory history")
 
     # Hiển thị lịch sử cũ
     history_text = "**Lịch sử chat đến trước tin nhắn này:**\n\n"
@@ -76,7 +84,6 @@ async def on_message(message: cl.Message):
     history.add_message(user_msg)
 
     try:
-        # Loading message
         loading_msg = cl.Message(content="Đang tìm kiếm và suy nghĩ...")
         await loading_msg.send()
 
@@ -87,14 +94,12 @@ async def on_message(message: cl.Message):
             chat_history=history.messages,
         )
 
-        # Cập nhật loading thành response thật
         loading_msg.content = response
         loading_msg.author = "Bot"
         await loading_msg.update()
 
         logger.info(f"Trả lời thành công, độ dài response: {len(response)} ký tự")
 
-        # Lưu response của bot vào history
         bot_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         bot_msg = AIMessage(
             content=response,

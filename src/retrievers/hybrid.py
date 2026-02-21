@@ -8,6 +8,7 @@ from src.retrievers.bm25 import BM25RetrieverBuilder
 
 from llama_index.core import Settings
 from llama_index.llms.groq import Groq
+from langfuse import observe
 
 import logging
 logger = logging.getLogger(__name__)
@@ -73,6 +74,7 @@ class HybridRetriever:
             verbose=True,
         )
 
+    @observe(name="hybrid_retrieve")
     async def retrieve(
         self,
         query: str,

@@ -51,7 +51,7 @@ logs/
 .chainlit/
 chainlit.md
 
-# Large data/ vector DBs (ở root)
+# Large data/ model/ vector DBs (ở root)
 chroma_db/
 chroma_medical_db/
 bm25_persist_vi/
@@ -64,9 +64,9 @@ embedded_nodes.pkl
 *.gguf
 *.pth
 huggingface/
-cache/
 datasets/
 *.parquet
+models/
 # *.csv   # comment nếu muốn commit một số file csv nhỏ
 
 # Secrets và sensitive files (ở root)

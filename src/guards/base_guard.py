@@ -6,7 +6,8 @@ import fasttext
 import unicodedata
 import ahocorasick
 from pathlib import Path
-from src.guards.prompts import prompts  
+from src.guards.prompts import prompts
+from langfuse import observe
 import logging
 logger = logging.getLogger(__name__)
 # load_dotenv()
@@ -91,6 +92,7 @@ class BaseGuard:
             logger.error(f"Lỗi gọi Groq: {e}")
             return "ERROR"
 
+    @observe(name="input_guard")
     async def check_input(self, user_input: str) -> tuple[bool, str]:
         # Bước 1 & 2: kiểm tra nhanh
         lang_length_ok, error_msg = self._validate_lang_and_length(user_input)

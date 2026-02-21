@@ -3,6 +3,7 @@ from typing import List
 from groq import AsyncGroq
 from langchain_core.messages import BaseMessage, AIMessage, HumanMessage
 from dotenv import load_dotenv
+from langfuse import observe
 import logging
 import os
 
@@ -73,6 +74,7 @@ Người dùng: Loại trái cây nào tốt cho bệnh này?
 Bắt đầu viết lại câu hỏi hiện tại dựa trên lịch sử trên:
 """.strip()
 
+    @observe(name="query_rewrite")
     async def rewrite(
         self,
         question: str,

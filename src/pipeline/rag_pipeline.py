@@ -2,6 +2,7 @@ import os
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from dotenv import load_dotenv
+from langfuse import observe
 from langchain_core.messages import HumanMessage, AIMessage
 from src.embedding.embedding import EmbeddingProvider
 from src.guards.input_guard import InputGuard
@@ -62,6 +63,7 @@ class Rag:
 
         logger.info("[Rag] Khởi tạo xong.")
 
+    @observe(name="get_response")
     async def get_response(
         self,
         question: str,

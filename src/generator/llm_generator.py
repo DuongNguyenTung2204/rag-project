@@ -3,6 +3,7 @@ from typing import Optional
 from groq import AsyncGroq
 from dotenv import load_dotenv
 from src.generator.prompt import PromptTemplate
+from langfuse import observe
 import logging
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -27,6 +28,7 @@ class LLMGenerator:
         self.max_completion_tokens = max_completion_tokens
         logger.info(f"[LLMGenerator] Khởi tạo Groq với model: {self.model}, Temperature: {self.temperature}, Max Tokens: {self.max_completion_tokens}")
 
+    @observe(name="llm_generate")
     async def generate_response(
         self,
         question: str,
