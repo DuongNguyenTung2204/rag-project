@@ -1,0 +1,129 @@
+# Python basics (bytecode, caches, virtualenvs)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+*.egg-info/
+dist/
+build/
+develop-eggs/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Jupyter / Kaggle notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+*.ipynb
+.DS_Store
+Thumbs.db
+
+# Logs and temp files (ở root)
+logs/
+*.log
+*.logs
+
+# Chainlit specific (tạm thời, cache, default files)
+.chainlit/
+chainlit.md
+
+# Large data/ vector DBs (ở root)
+chroma_db/
+chroma_medical_db/
+bm25_persist_vi/
+embedded_nodes.pkl
+*.pkl
+*.pickle
+*.bin
+*.pt
+*.safetensors
+*.gguf
+*.pth
+huggingface/
+cache/
+datasets/
+*.parquet
+# *.csv   # comment nếu muốn commit một số file csv nhỏ
+
+# Secrets và sensitive files (ở root)
+secrets/
+*.key
+*.pem
+*.secret
+blocked_keywords.txt
+.env
+.env.*
+!.env.example
+
+# Các folder cụ thể cần ignore bên trong src/
+src/secrets/
+src/logs/
+src/bm25_persist_vi/
+src/storage/chroma_db/
+
+
+# HuggingFace / Transformers cache
+~/.cache/huggingface/
+.cache/huggingface/
+hub/
+transformers_cache/
+
+# Torch / CUDA temp
+*.pt
+*.bin
+*.safetensors
+torch/
+
+# Chroma / vector store specifics (ở root)
+chroma/
+chromadb_data/
+chroma.sqlite3
+wal/
+
+# Llama-index temp / cache (ở root)
+llama_index_cache/
+node_store/
+docstore/
+vector_store/
+index_store/
+
+# IDE / Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS generated
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Misc large files you might generate
+*.zip
+*.tar.gz
+*.7z
