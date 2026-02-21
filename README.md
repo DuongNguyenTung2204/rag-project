@@ -50,6 +50,7 @@ Hệ thống kết hợp:
     ```bash
     git clone https://github.com/DuongNguyenTung2204/rag-project.git
     cd rag-project
+    ```
 2. Tạo virtual environment & cài dependencies: 
     ```bash
     python -m venv venv
@@ -58,22 +59,28 @@ Hệ thống kết hợp:
     # Linux/Mac
     # source venv/bin/activate
     pip install -r requirements.txt
+    ```
 3. Tạo file .env từ .env.example và điền các giá trị:
     ```bash
     cp .env.example .env
     # Chỉnh sửa .env: GROQ_API_KEY, LANGFUSE keys, LANGFUSE url
+    ```
 4. Chạy Redis + MongoDB:
     ```bash
     docker-compose up -d
+    ```
 5. Download datasets
     ```bash
     python -m src.storage.load_datasets
+    ```
 6. Build vector database (tạo embedding + lưu vào ChromaDB):
     ```bash
     python -m src.storage.build_vector_db
+    ```
 7. Build BM25 index + lưu nodes vào MongoDB DocumentStore:
     ```bash
     python -m src.storage.build_mongo_docstore
+    ```
 8. Tải model FastText Language Identification (`lid.176.bin`):
    Model này dùng để detect ngôn ngữ (đặc biệt hữu ích cho hybrid RAG multilingual, lọc tiếng Việt, v.v.).  
    Chạy lệnh sau trong thư mục gốc project (rag-project):
@@ -84,6 +91,7 @@ Hệ thống kết hợp:
 
    # Tải model chính thức từ fastText (khoảng 128MB)
    wget https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin -O src/models/lid.176.bin
+   ```
 9. Chạy Chainlit:
     Khởi động ứng dụng bằng lệnh sau:
 
