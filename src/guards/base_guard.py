@@ -18,7 +18,6 @@ class BaseGuard:
         guard_model: str,
         fasttext_model_dir: str,
         blocked_file_path: str,
-        
     ):
         self.groq_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
         self.model = guard_model  # hoặc model Groq khác nếu muốn
@@ -77,13 +76,13 @@ class BaseGuard:
 
         return True, ""
 
-    async def _check_with_llm(self, prompt: str, user_input: str) -> str:
+    async def _check_with_llm(self, prompt: str) -> str:
         try:
             response = await self.groq_client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "Bạn là trợ lý an toàn. TUYỆT ĐỐI CHỈ TRẢ LỜI 'Có' hoặc 'Không'. KHÔNG dùng <think>, KHÔNG giải thích, KHÔNG thêm text nào khác."},
-                    {"role": "user", "content": prompt.format(relevant_text=user_input)}
+                    {"role": "user", "content": prompt}
                 ],
                 temperature=0.0,
             )
@@ -99,21 +98,44 @@ class BaseGuard:
         if not lang_length_ok:
             return False, error_msg
 
+        # Bước 3: Từ cấm
         if self._has_blocked_keywords(user_input):
             return False, "Nội dung chứa các từ nhạy cảm hoặc bị cấm"
 
         # Bước 4: Kiểm tra LLM - dùng prompts từ file riêng
         checks = [
-            (prompts.toxicity,          "Nội dung truy vấn có chứa yếu tố độc hại, xúc phạm, bạo lực, phân biệt đối xử, khiêu dâm, khuyến khích tự hại hoặc bất hợp pháp."),
-            (prompts.topic_restriction, "Nội dung truy vấn không thuộc chủ đề về y tế, sức khỏe."),
-            (prompts.prompt_injection,  "Nội dung có dấu hiệu thao túng hoặc jailbreak. Không được phép."),
-            (prompts.code_injection,    "Nội dung chứa mã nguy hiểm hoặc injection. Không được phép."),
+            (prompts.toxicity.format(relevant_text=user_input),          "Nội dung truy vấn có chứa yếu tố độc hại, xúc phạm, bạo lực, phân biệt đối xử, khiêu dâm, khuyến khích tự hại hoặc bất hợp pháp."),
+            (prompts.topic_restriction.format(relevant_text=user_input), "Nội dung truy vấn không thuộc chủ đề về y tế, sức khỏe."),
+            (prompts.prompt_injection.format(relevant_text=user_input),  "Nội dung có dấu hiệu thao túng hoặc jailbreak. Không được phép."),
+            (prompts.code_injection.format(relevant_text=user_input),    "Nội dung chứa mã nguy hiểm hoặc injection. Không được phép."),
         ]
 
-        for prompt_template, error_message in checks:
-            result = await self._check_with_llm(prompt_template, user_input)
+        for prompt, error_message in checks:
+            result = await self._check_with_llm(prompt)
             if "Có" in result:
                 return False, error_message
 
         # Pass hết
         return True, user_input
+    
+    @observe(name="output_guard")
+    async def check_output(self, response: str, context: str) -> tuple[bool, str]:
+        # Bước 1: Từ cấm
+        if self._has_blocked_keywords(response):
+            return False, "Nội dung chứa các từ nhạy cảm hoặc bị cấm"
+
+        # Bước 2-5: Kiểm tra LLM - dùng prompts từ file riêng
+        checks = [
+            (prompts.toxicity.format(relevant_text=response),          "Nội dung output có chứa yếu tố độc hại, xúc phạm, bạo lực, phân biệt đối xử, khiêu dâm, khuyến khích tự hại hoặc bất hợp pháp."),
+            (prompts.topic_restriction.format(relevant_text=response), "Nội dung output không thuộc chủ đề về y tế, sức khỏe."),
+            (prompts.hallucination_prompt.format(relevant_text=response, context=context),  "Nội dung có dấu hiệu bịa đặt hoặc mâu thuẫn với context."),
+            (prompts.refusal_leak_prompt.format(relevant_text=response),    "Nội dung output từ chối nhưng vẫn leak thông tin nguy hiểm."),
+        ]
+
+        for prompt, error_message in checks:
+            result = await self._check_with_llm(prompt)
+            if "Có" in result:
+                return False, error_message
+
+        # Pass hết
+        return True, response

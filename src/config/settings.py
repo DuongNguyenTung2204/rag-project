@@ -7,8 +7,7 @@ class PathsConfig(BaseSettings):
     """Các đường dẫn chung của project"""
     _this_file = Path(__file__).resolve()           # đường dẫn tuyệt đối tới file settings.py
     base_dir: Path = _this_file.parent.parent
-    vector_db_dir: Path = base_dir / "storage" / "chroma_db"
-    bm25_persist_dir: Path = base_dir/ "bm25_persist_vi"
+    bm25_persist_dir: Path = base_dir / "bm25_persist_vi"
     logs_dir: Path = base_dir / "logs"
     fasttext_model_dir: Path = base_dir / "models" / "lid.176.bin"
     blocked_file_path: Path = base_dir / "secrets" / "blocked_keywords.txt"
@@ -22,9 +21,11 @@ class EmbeddingConfig(BaseSettings):
     device: Literal["cuda", "cpu", "mps"] = "cuda"
 
 
-class VectorStoreConfig(BaseSettings):
-    """Cấu hình Chroma"""
-    collection_name: str = "medical_healthcare_rag"
+class PineconeConfig(BaseSettings):
+    """Cấu hình Pinecone Vector Store"""
+    index_name: str = "vinmec-subtitle-rag-kaggle"
+    namespace: Optional[str] = None          # Optional, để None nếu không dùng namespace
+    text_key: str = "text"                   # Field chứa text trong metadata (thay "_node_content" nếu cần)
 
 
 class DocStoreConfig(BaseSettings):
@@ -48,15 +49,18 @@ class LLMConfig(BaseSettings):
     small_model: str = "openai/gpt-oss-20b"
     guard_model: str = "openai/gpt-oss-safeguard-20b"
 
+
 class ChainlitConfig(BaseSettings):
     """Cấu hình Chainlit / session history"""
     session_history_backend: Literal["memory", "redis", "file"] = "redis"
     redis_url: Optional[str] = "redis://localhost:6379/0"  # Default cho Docker trên Windows
 
+
 class SemanticCacheConfig(BaseSettings):
     """Cấu hình Semantic Cache"""
     similarity_threshold: float = 0.9
     cache_ttl_days: int = 90
+
 
 class AppConfig(BaseSettings):
     """Cấu hình chung ứng dụng"""
@@ -72,7 +76,7 @@ class AppConfig(BaseSettings):
 
     paths: PathsConfig = PathsConfig()
     embedding: EmbeddingConfig = EmbeddingConfig()
-    vector_store: VectorStoreConfig = VectorStoreConfig()
+    pinecone: PineconeConfig = PineconeConfig()           # ← Thay thế VectorStoreConfig cũ
     doc_store: DocStoreConfig = DocStoreConfig()
     retriever: RetrieverConfig = RetrieverConfig()
     llm: LLMConfig = LLMConfig()

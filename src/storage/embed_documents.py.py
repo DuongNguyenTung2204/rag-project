@@ -158,21 +158,3 @@ print(f"Tổng số nodes sau chunking + embedding: {len(all_nodes):,}")
 with open(EMBEDDED_NODES_PATH, "wb") as f:
     pickle.dump(all_nodes, f)
 print(f"Đã lưu nodes đã embed vào {EMBEDDED_NODES_PATH}")
-
-# ========================
-# 3. Lưu vào Chroma
-# ========================
-db = chromadb.PersistentClient(path=PERSIST_DIR)
-chroma_collection = db.get_or_create_collection(collection_name)
-vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
-storage_context = StorageContext.from_defaults(vector_store=vector_store)
-
-index = VectorStoreIndex(
-    nodes=all_nodes,
-    storage_context=storage_context,
-    embed_model=None  # Không embed lại
-)
-
-print("Embedding và lưu vector DB xong!")
-print(f"Vector DB lưu tại: {PERSIST_DIR}")
-print(f"Số vector trong collection: {chroma_collection.count()}")

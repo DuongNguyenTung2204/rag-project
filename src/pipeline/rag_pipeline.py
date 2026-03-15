@@ -6,6 +6,7 @@ from langfuse import observe
 from langchain_core.messages import HumanMessage, AIMessage
 from src.embedding.embedding import EmbeddingProvider
 from src.guards.input_guard import InputGuard
+from src.guards.output_guard import OutputGuard
 from src.rewriter.query_rewriter import QueryRewriter
 from src.retrievers.hybrid import HybridRetriever
 from src.generator.llm_generator import LLMGenerator
@@ -25,6 +26,12 @@ class Rag:
             blocked_file_path=settings.paths.blocked_file_path,
         )
 
+        self.output_guard = OutputGuard(
+            guard_model=settings.llm.guard_model,
+            fasttext_model_dir=settings.paths.fasttext_model_dir,
+            blocked_file_path=settings.paths.blocked_file_path,
+        )
+
         self.query_rewriter = QueryRewriter(
             small_model=settings.llm.small_model,
         )
@@ -36,14 +43,16 @@ class Rag:
         self.embed_model = self.embedding_provider.embed_model
         
         self.retriever = HybridRetriever(
-            vector_db_dir=settings.paths.vector_db_dir,
-            collection_name=settings.vector_store.collection_name,
+            pinecone_api_key=os.getenv("PINECONE_API_KEY"),          
+            pinecone_index_name=settings.pinecone.index_name,    
             embed_model=self.embed_model,
             mongo_uri=settings.doc_store.uri,
             mongo_db_name=settings.doc_store.db_name,
             mongo_namespace=settings.doc_store.namespace,
             bm25_persist_dir=settings.paths.bm25_persist_dir,
             small_model=settings.llm.small_model,
+            pinecone_namespace=settings.pinecone.namespace,      # Optional, có thể None
+            pinecone_text_key=settings.pinecone.text_key or "text",  # Optional, mặc định "text"
             top_k_dense=settings.retriever.top_k_dense,
             top_k_bm25=settings.retriever.top_k_bm25,
             top_k_final=settings.retriever.top_k_final,
@@ -156,7 +165,18 @@ class Rag:
                 "Vui lòng thử lại sau vài giây hoặc đặt câu hỏi khác nhé!"
             )
 
-        # Bước 5: Thời gian xử lý + debug info
+        # Bước 5: Output Guardrail
+        is_safe, response_or_error = await self.output_guard.guard(final_response, context)
+        if not is_safe:
+            logger.warning(f"[Output Guard] Blocked: {response_or_error}")
+            
+            return (
+                "Xin lỗi, câu trả lời này không đáp ứng được tiêu chuẩn an toàn.\n\n"
+                f"Lý do: {response_or_error}\n\n"
+                "Vui lòng hỏi lại với nội dung chỉ liên quan đến y tế và sức khỏe."
+            )
+        
+        # Bước 6: Thời gian xử lý + debug info
         time_taken = datetime.now() - start_time
         debug_info = f"\n\n(Thời gian xử lý: {time_taken.total_seconds():.2f}s | Docs retrieved: {len(nodes) if 'nodes' in locals() else 0})"
 

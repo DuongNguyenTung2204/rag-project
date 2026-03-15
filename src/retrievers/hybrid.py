@@ -15,20 +15,22 @@ logger = logging.getLogger(__name__)
 
 class HybridRetriever:
     """
-    Hybrid Retriever kết hợp Dense + BM25 bằng QueryFusionRetriever (RRF).
+    Hybrid Retriever kết hợp Dense (Pinecone) + BM25 bằng QueryFusionRetriever (RRF).
     """
 
     def __init__(
         self,
-        # Các tham số config (có thể truyền từ config object)
-        vector_db_dir: str,
-        collection_name: str,
+        # Các tham số config (có thể truyền từ config object hoặc env)
+        pinecone_api_key: str,                  # Mới: thay vì vector_db_dir
+        pinecone_index_name: str,               # Mới: thay vì collection_name
         embed_model,
         mongo_uri: str,
         mongo_db_name: str,
         mongo_namespace: str,
         bm25_persist_dir: str,
         small_model: str,
+        pinecone_namespace: Optional[str] = None,   # Optional cho Pinecone
+        pinecone_text_key: str = "text",            # Optional, mặc định "text"
         top_k_dense: int = 10,
         top_k_bm25: int = 15,
         top_k_final: int = 6,
@@ -40,21 +42,23 @@ class HybridRetriever:
             raise ValueError("Không tìm thấy GROQ_API_KEY trong .env")
 
         Settings.llm = Groq(
-            model=small_model,  # hoặc model Groq khác nếu bạn muốn
+            model=small_model,
             api_key=groq_api_key,
             temperature=0.1,
         )
         logger.info("Đã set LLM Groq cho QueryFusionRetriever")
 
-        # Tạo dense retriever
+        # Tạo dense retriever (bây giờ dùng Pinecone)
         self.dense_retriever = DenseRetrieverBuilder.build(
-            persist_path=vector_db_dir,
-            collection_name=collection_name,
+            api_key=pinecone_api_key,
+            index_name=pinecone_index_name,
             embed_model=embed_model,
             similarity_top_k=top_k_dense,
+            namespace=pinecone_namespace,
+            text_key=pinecone_text_key,
         )
 
-        # Tạo bm25 retriever
+        # Tạo bm25 retriever (giữ nguyên)
         self.bm25_retriever = BM25RetrieverBuilder.build(
             persist_dir=bm25_persist_dir,
             mongo_uri=mongo_uri,
@@ -63,7 +67,7 @@ class HybridRetriever:
             similarity_top_k=top_k_bm25,
         )
 
-        # Fusion
+        # Fusion (giữ nguyên logic)
         logger.info("Khởi tạo QueryFusionRetriever (hybrid mode)...")
         self.fusion_retriever = QueryFusionRetriever(
             retrievers=[self.dense_retriever, self.bm25_retriever],
@@ -110,7 +114,6 @@ class HybridRetriever:
             title = node.metadata.get("title", "Không có tiêu đề")
             url = node.metadata.get("url", node.metadata.get("source_url", "Không có link"))
 
-            # Format rõ ràng để LLM dễ map [i]
             source_info = f"[{i}] {title} - {url} (Score: {score:.4f})"
             segment = f"{source_info}\n{text}\n{'-'*60}\n"
 
